@@ -7,6 +7,7 @@ import (
 
 type Opt func(*taggedLogCore)
 
+//noinspection ALL
 func DefaultColorConfig() ColorConfig {
 	return defaultColorCfg
 }
@@ -36,6 +37,10 @@ func (this *taggedLogCore) applyOpts(opt ...Opt) {
 func (this *taggedLogCore) clone() *taggedLogCore {
 	cloned := *this
 	return &cloned
+}
+
+func (this *taggedLogCore) makeTag(c Color, b bool) string {
+	return this.afterTagf(this.tagf().Format(c, b))
 }
 
 func defaultAfterTag(tag string) string {

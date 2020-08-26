@@ -1,34 +1,42 @@
 package log
 
-import "go.uber.org/zap"
+import (
+	"fmt"
+	"go.uber.org/zap"
+)
 
 type taggedZapLogger struct {
 	taggedLogCore
 }
 
 func (this *taggedZapLogger) Debug(msg string, fields ...zap.Field) {
-	panic("implement me")
+	tag := this.makeTag(this.colorCfg.Debug, false)
+	this.logger.Debug(fmt.Sprintf("%s%s", tag, msg), fields...)
 }
 
 func (this *taggedZapLogger) Info(msg string, fields ...zap.Field) {
-	panic("implement me")
+	tag := this.makeTag(this.colorCfg.Debug, false)
+	this.logger.Info(fmt.Sprintf("%s%s", tag, msg), fields...)
 }
 
 func (this *taggedZapLogger) Warn(msg string, fields ...zap.Field) {
-	panic("implement me")
+	tag := this.makeTag(this.colorCfg.Debug, false)
+	this.logger.Warn(fmt.Sprintf("%s%s", tag, msg), fields...)
 }
 
 func (this *taggedZapLogger) Error(msg string, fields ...zap.Field) {
-	panic("implement me")
+	tag := this.makeTag(this.colorCfg.Debug, false)
+	this.logger.Error(fmt.Sprintf("%s%s", tag, msg), fields...)
 }
 
 func (this *taggedZapLogger) Fatal(msg string, fields ...zap.Field) {
-	panic("implement me")
+	tag := this.makeTag(this.colorCfg.Debug, false)
+	this.logger.Fatal(fmt.Sprintf("%s%s", tag, msg), fields...)
 }
 
 func (this *taggedZapLogger) Panic(msg string, fields ...zap.Field) {
-	msgWithTag := msg
-	this.logger.Panic(msgWithTag, fields...)
+	tag := this.makeTag(this.colorCfg.Debug, false)
+	this.logger.Panic(fmt.Sprintf("%s%s", tag, msg), fields...)
 }
 
 func (this *taggedZapLogger) With(opt ...Opt) ZapLog {
@@ -43,13 +51,14 @@ func (this *taggedZapLogger) clone() taggedZapLogger {
 
 func NewTaggedZapLogger(zapLog *zap.Logger, tag string, opts ...Opt) ZapLog {
 	newLogger := zapLog.WithOptions(zap.AddCallerSkip(1))
-	l := &taggedLogCore{
-		logger:   newLogger,
-		tagf:     nil,
-		colorCfg: defaultColorCfg,
+	out := &taggedZapLogger{
+		taggedLogCore: taggedLogCore{
+			logger:    newLogger,
+			tagf:      defaultTagFormatOption(tag),
+			afterTagf: defaultAfterTag,
+			colorCfg:  defaultColorCfg,
+		},
 	}
-	l.applyOpts(opts...)
-	return &taggedZapLogger{
-		*l,
-	}
+	out.applyOpts(opts...)
+	return out
 }
