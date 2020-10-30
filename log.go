@@ -1,10 +1,10 @@
 package log
 
 import (
-	"fmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
+	"strings"
 )
 
 const (
@@ -57,7 +57,12 @@ func newZapCore(encType EncodeType, level zapcore.Level) zapcore.Core {
 		EncodeTime:     zapcore.ISO8601TimeEncoder,
 		EncodeDuration: zapcore.MillisDurationEncoder,
 		EncodeCaller: func(caller zapcore.EntryCaller, encoder zapcore.PrimitiveArrayEncoder) {
-			encoder.AppendString(fmt.Sprintf("%18s", caller.String()[skipLen:]))
+			fullPath := caller.FullPath()
+			if strings.HasPrefix(wd, fullPath) {
+				encoder.AppendString(fullPath[skipLen:])
+			} else {
+				encoder.AppendString(caller.TrimmedPath())
+			}
 		},
 	}
 	return zapcore.NewCore(
