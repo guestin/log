@@ -81,10 +81,6 @@ func (this *taggedClassicLogger) With(opt ...Opt) ClassicLog {
 	return cloned
 }
 
-func (this *taggedClassicLogger) makeTag(c Color, b bool) string {
-	return this.afterTagf(this.tagf().Format(c, b))
-}
-
 func NewTaggedClassicLogger(zapLog *zap.Logger, tag string, opts ...Opt) ClassicLog {
 	newLogger := zapLog.WithOptions(zap.AddCallerSkip(1))
 	out := &taggedClassicLogger{
