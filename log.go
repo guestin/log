@@ -58,7 +58,7 @@ func newZapCore(encType EncodeType, level zapcore.Level) zapcore.Core {
 		EncodeDuration: zapcore.MillisDurationEncoder,
 		EncodeCaller: func(caller zapcore.EntryCaller, encoder zapcore.PrimitiveArrayEncoder) {
 			fullPath := caller.FullPath()
-			if strings.HasPrefix(wd, fullPath) {
+			if strings.HasPrefix(fullPath, wd) {
 				encoder.AppendString(fullPath[skipLen:])
 			} else {
 				encoder.AppendString(caller.TrimmedPath())
