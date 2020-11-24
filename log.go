@@ -75,12 +75,12 @@ func newZapCore(encType EncodeType, level zapcore.Level) zapcore.Core {
 
 // init logger with some helpful default options.
 // usually used in docker container
-func EasyInitConsoleLogger(stacktraceLevel zapcore.Level, options ...zap.Option) {
+func EasyInitConsoleLogger(logLevel zapcore.Level, stacktraceLevel zapcore.Level, options ...zap.Option) {
 	options = append([]zap.Option{
 		zap.AddCaller(),
 		zap.AddStacktrace(stacktraceLevel),
 		zap.ErrorOutput(zapcore.AddSync(os.Stderr))}, options...)
-	InitLog(ConsoleEncoder, zapcore.DebugLevel, options...)
+	InitLog(ConsoleEncoder, logLevel, options...)
 }
 
 // warning: if you doesn't understand what 'the option' means , use 'EasyInitConsoleLogger' instead
