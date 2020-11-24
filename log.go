@@ -5,6 +5,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"os"
 	"strings"
+	"sync"
 )
 
 const (
@@ -12,21 +13,22 @@ const (
 	ConsoleEncoder
 )
 
-var gZapLogger *zap.Logger
-var gSugarLogger *zap.SugaredLogger
+var gRootZapLogger *zap.Logger
+var gRootSugarLogger *zap.SugaredLogger
+var gInitOnce sync.Once
 
 // flush logs to underlying device
 func Flush() {
-	if gZapLogger != nil {
-		_ = gZapLogger.Sync()
+	if gRootZapLogger != nil {
+		_ = gRootZapLogger.Sync()
 	}
 }
 
 func Classic() *zap.SugaredLogger {
-	return gSugarLogger
+	return gRootSugarLogger
 }
 func Zap() *zap.Logger {
-	return gZapLogger
+	return gRootZapLogger
 }
 
 type encoderFnType func(zapcore.EncoderConfig) zapcore.Encoder
@@ -71,11 +73,21 @@ func newZapCore(encType EncodeType, level zapcore.Level) zapcore.Core {
 		zap.NewAtomicLevelAt(level))
 }
 
-func init() {
-	core := newZapCore(ConsoleEncoder, zapcore.DebugLevel)
-	gZapLogger = zap.New(core,
+// init logger with some helpful default options.
+// usually used in docker container
+func EasyInitConsoleLogger(stacktraceLevel zapcore.Level, options ...zap.Option) {
+	options = append([]zap.Option{
 		zap.AddCaller(),
-		zap.AddStacktrace(zapcore.ErrorLevel),
-		zap.ErrorOutput(zapcore.AddSync(os.Stderr)))
-	gSugarLogger = gZapLogger.Sugar()
+		zap.AddStacktrace(stacktraceLevel),
+		zap.ErrorOutput(zapcore.AddSync(os.Stderr))}, options...)
+	InitLog(ConsoleEncoder, zapcore.DebugLevel, options...)
+}
+
+// warning: if you doesn't understand what 'the option' means , use 'EasyInitConsoleLogger' instead
+func InitLog(encoder EncodeType, logLevel zapcore.Level, options ...zap.Option) {
+	gInitOnce.Do(func() {
+		core := newZapCore(encoder, logLevel)
+		gRootZapLogger = zap.New(core, options...)
+		gRootSugarLogger = gRootZapLogger.Sugar()
+	})
 }
