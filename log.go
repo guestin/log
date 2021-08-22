@@ -97,7 +97,6 @@ type MultiCfg struct {
 	Encoder  EncodeType
 	LogLevel zapcore.Level
 	Writer   io.Writer
-	Options  []zap.Option
 }
 
 // InitMultiTargetLog init multi core logger
