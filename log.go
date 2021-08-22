@@ -3,6 +3,7 @@ package log
 import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"io"
 	"os"
 	"strings"
 	"sync"
@@ -17,16 +18,19 @@ var gRootZapLogger *zap.Logger
 var gRootSugarLogger *zap.SugaredLogger
 var gInitOnce sync.Once
 
-// flush logs to underlying device
+// Flush logs to underlying device
+//goland:noinspection ALL
 func Flush() {
 	if gRootZapLogger != nil {
 		_ = gRootZapLogger.Sync()
 	}
 }
 
+//goland:noinspection ALL
 func Classic() *zap.SugaredLogger {
 	return gRootSugarLogger
 }
+
 func Zap() *zap.Logger {
 	return gRootZapLogger
 }
@@ -35,7 +39,7 @@ type encoderFnType func(zapcore.EncoderConfig) zapcore.Encoder
 
 type EncodeType uint8
 
-func newZapCore(encType EncodeType, level zapcore.Level) zapcore.Core {
+func newZapCore(encType EncodeType, level zapcore.Level, writer io.Writer) zapcore.Core {
 	var encoderFn encoderFnType = nil
 	switch encType {
 	case JsonEncoder:
@@ -69,24 +73,45 @@ func newZapCore(encType EncodeType, level zapcore.Level) zapcore.Core {
 	}
 	return zapcore.NewCore(
 		encoderFn(encoderConfig),
-		zapcore.AddSync(os.Stdout),
+		zapcore.AddSync(writer),
 		zap.NewAtomicLevelAt(level))
 }
 
-// init logger with some helpful default options.
+// EasyInitConsoleLogger init logger with some helpful default options.
 // usually used in docker container
+//goland:noinspection ALL
 func EasyInitConsoleLogger(logLevel zapcore.Level, stacktraceLevel zapcore.Level, options ...zap.Option) {
 	options = append([]zap.Option{
 		zap.AddCaller(),
 		zap.AddStacktrace(stacktraceLevel),
 		zap.ErrorOutput(zapcore.AddSync(os.Stderr))}, options...)
-	InitLog(ConsoleEncoder, logLevel, options...)
+	InitLog(ConsoleEncoder, logLevel, os.Stdout, options...)
 }
 
-// warning: if you doesn't understand what 'the option' means , use 'EasyInitConsoleLogger' instead
-func InitLog(encoder EncodeType, logLevel zapcore.Level, options ...zap.Option) {
+// InitLog warning: if you don't understand what 'the option' means , use 'EasyInitConsoleLogger' instead
+func InitLog(encoder EncodeType, logLevel zapcore.Level, writer io.Writer, options ...zap.Option) {
+	initOnce(newZapCore(encoder, logLevel, writer), options...)
+}
+
+type MultiCfg struct {
+	Encoder  EncodeType
+	LogLevel zapcore.Level
+	Writer   io.Writer
+	Options  []zap.Option
+}
+
+// InitMultiTargetLog init multi core logger
+//goland:noinspection ALL
+func InitMultiTargetLog(target []*MultiCfg, options ...zap.Option) {
+	cores := make([]zapcore.Core, 0)
+	for i := range target {
+		cores = append(cores, newZapCore(target[i].Encoder, target[i].LogLevel, target[i].Writer))
+	}
+	initOnce(zapcore.NewTee(cores...), options...)
+}
+
+func initOnce(core zapcore.Core, options ...zap.Option) {
 	gInitOnce.Do(func() {
-		core := newZapCore(encoder, logLevel)
 		gRootZapLogger = zap.New(core, options...)
 		gRootSugarLogger = gRootZapLogger.Sugar()
 	})
