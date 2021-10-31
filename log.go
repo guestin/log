@@ -5,7 +5,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"io"
 	"os"
-	"path"
+	"path/filepath"
 	"sync"
 )
 
@@ -49,6 +49,7 @@ func newZapCore(encType EncodeType, level zapcore.Level, writer io.Writer) zapco
 	default:
 		panic("invalid encoder type")
 	}
+	pathCache := new(sync.Map)
 	encoderConfig := zapcore.EncoderConfig{
 		MessageKey:     "msg",
 		LevelKey:       "lv",
@@ -62,9 +63,16 @@ func newZapCore(encType EncodeType, level zapcore.Level, writer io.Writer) zapco
 		EncodeDuration: zapcore.MillisDurationEncoder,
 		EncodeCaller: func(caller zapcore.EntryCaller, encoder zapcore.PrimitiveArrayEncoder) {
 			fullPath := caller.FullPath()
-			fileDir := path.Dir(fullPath)
-			fileName := path.Base(fullPath)
-			encoder.AppendString(path.Join(fileDir, fileName))
+			r, ok := pathCache.Load(fullPath)
+			if !ok {
+				pathArr := filepath.SplitList(fullPath)
+				if len(pathArr) > 3 {
+					pathArr = pathArr[len(pathArr)-3:]
+				}
+				r = filepath.Join(pathArr...)
+				pathCache.Store(fullPath, r)
+			}
+			encoder.AppendString(r.(string))
 		},
 	}
 	return zapcore.NewCore(
