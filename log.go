@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -65,7 +66,7 @@ func newZapCore(encType EncodeType, level zapcore.Level, writer io.Writer) zapco
 			fullPath := caller.FullPath()
 			r, ok := pathCache.Load(fullPath)
 			if !ok {
-				pathArr := filepath.SplitList(fullPath)
+				pathArr := strings.Split(fullPath, string(filepath.Separator))
 				if len(pathArr) > 3 {
 					pathArr = pathArr[len(pathArr)-3:]
 				}
