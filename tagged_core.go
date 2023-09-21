@@ -7,7 +7,6 @@ import (
 
 type Opt func(*taggedLogCore)
 
-//noinspection ALL
 func DefaultColorConfig() ColorConfig {
 	return defaultColorCfg
 }

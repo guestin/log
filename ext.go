@@ -36,7 +36,7 @@ type ZapLog interface {
 	With(opt ...Opt) ZapLog
 }
 
-// thanks for go.uber.org/zap/internal/color.go
+// Color thanks for go.uber.org/zap/internal/color.go
 type Color uint8
 
 const (

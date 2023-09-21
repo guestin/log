@@ -20,20 +20,15 @@ var gRootSugarLogger *zap.SugaredLogger
 var gInitOnce sync.Once
 
 // Flush logs to underlying device
+//
 //goland:noinspection ALL
 func Flush() {
 	if gRootZapLogger != nil {
 		_ = gRootZapLogger.Sync()
 	}
-}
-
-//goland:noinspection ALL
-func Classic() *zap.SugaredLogger {
-	return gRootSugarLogger
-}
-
-func Zap() *zap.Logger {
-	return gRootZapLogger
+	if gRootSugarLogger != nil {
+		_ = gRootSugarLogger.Sync()
+	}
 }
 
 type encoderFnType func(zapcore.EncoderConfig) zapcore.Encoder
@@ -84,18 +79,21 @@ func newZapCore(encType EncodeType, level zapcore.Level, writer io.Writer) zapco
 
 // EasyInitConsoleLogger init logger with some helpful default options.
 // usually used in docker container
-//goland:noinspection ALL
-func EasyInitConsoleLogger(logLevel zapcore.Level, stacktraceLevel zapcore.Level, options ...zap.Option) {
+func EasyInitConsoleLogger(logLevel zapcore.Level,
+	stacktraceLevel zapcore.Level,
+	options ...zap.Option) (*zap.Logger, *zap.SugaredLogger) {
 	options = append([]zap.Option{
 		zap.AddCaller(),
 		zap.AddStacktrace(stacktraceLevel),
 		zap.ErrorOutput(zapcore.AddSync(os.Stderr))}, options...)
-	InitLog(ConsoleEncoder, logLevel, os.Stdout, options...)
+	return InitLog(ConsoleEncoder, logLevel, os.Stdout, options...)
 }
 
 // InitLog warning: if you don't understand what 'the option' means , use 'EasyInitConsoleLogger' instead
-func InitLog(encoder EncodeType, logLevel zapcore.Level, writer io.Writer, options ...zap.Option) {
-	initOnce(newZapCore(encoder, logLevel, writer), options...)
+func InitLog(encoder EncodeType,
+	logLevel zapcore.Level,
+	writer io.Writer, options ...zap.Option) (*zap.Logger, *zap.SugaredLogger) {
+	return initOnce(newZapCore(encoder, logLevel, writer), options...)
 }
 
 type MultiCfg struct {
@@ -105,18 +103,18 @@ type MultiCfg struct {
 }
 
 // InitMultiTargetLog init multi core logger
-//goland:noinspection ALL
-func InitMultiTargetLog(target []*MultiCfg, options ...zap.Option) {
+func InitMultiTargetLog(target []*MultiCfg, options ...zap.Option) (*zap.Logger, *zap.SugaredLogger) {
 	cores := make([]zapcore.Core, 0)
 	for i := range target {
 		cores = append(cores, newZapCore(target[i].Encoder, target[i].LogLevel, target[i].Writer))
 	}
-	initOnce(zapcore.NewTee(cores...), options...)
+	return initOnce(zapcore.NewTee(cores...), options...)
 }
 
-func initOnce(core zapcore.Core, options ...zap.Option) {
+func initOnce(core zapcore.Core, options ...zap.Option) (*zap.Logger, *zap.SugaredLogger) {
 	gInitOnce.Do(func() {
 		gRootZapLogger = zap.New(core, options...)
 		gRootSugarLogger = gRootZapLogger.Sugar()
 	})
+	return gRootZapLogger, gRootSugarLogger
 }

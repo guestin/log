@@ -6,7 +6,7 @@ import (
 )
 
 func TestTaggedZap(t *testing.T) {
-	l := NewTaggedZapLogger(Zap(), "test_zap")
+	l := NewTaggedZapLogger(rlogger, "test_zap")
 	l.With(UseColor(Red)).Debug("aabbcc")
 	l.With(UseColor(Blue),
 		UseSubTag(NewFixStyleText("red!", Red, false)),
