@@ -1,6 +1,9 @@
 package log
 
-import "go.uber.org/zap/zapcore"
+import (
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+)
 
 func UseColor(color Color) Opt {
 	return func(l *taggedLogCore) {
@@ -32,6 +35,7 @@ func UseSubTag(subTag RichText) Opt {
 	}
 }
 
+//goland:noinspection ALL
 func UseLevelColor(level zapcore.Level, color Color) Opt {
 	return func(l *taggedLogCore) {
 		var target *Color
@@ -55,8 +59,16 @@ func UseLevelColor(level zapcore.Level, color Color) Opt {
 	}
 }
 
+//goland:noinspection ALL
 func UseAfterTagRender(f func(tag string) string) Opt {
 	return func(c *taggedLogCore) {
 		c.afterTagf = f
+	}
+}
+
+//goland:noinspection ALL
+func UseFields(fields ...zap.Field) Opt {
+	return func(c *taggedLogCore) {
+		c.logger = c.logger.With(fields...)
 	}
 }
