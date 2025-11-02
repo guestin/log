@@ -72,3 +72,10 @@ func UseFields(fields ...zap.Field) Opt {
 		c.logger = c.logger.With(fields...)
 	}
 }
+
+//goland:noinspection ALL
+func WithZapOptions(o ...zap.Option) Opt {
+	return func(c *taggedLogCore) {
+		c.logger = c.logger.WithOptions(o...)
+	}
+}
